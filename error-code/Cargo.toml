@@ -4,4 +4,9 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 
-[dependencies]
+
+[dev-dependencies]
+thiserror = { workspace = true }
+error-code-derive = { workspace = true }
+http = { workspace = true }
+anyhow = { workspace = true }
