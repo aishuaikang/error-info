@@ -1,4 +1,7 @@
-use darling::{ast::Data, FromDeriveInput, FromVariant};
+use darling::{
+    ast::{Data, Fields},
+    util, FromDeriveInput, FromVariant,
+};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::DeriveInput;
@@ -18,7 +21,7 @@ struct EnumFromDarling {
 #[darling(attributes(error_info))]
 struct EnumFieldsInfo {
     ident: syn::Ident,
-    // fields: Fields<EnumFields>,
+    fields: Fields<util::Ignored>,
     #[darling(default)]
     code: String,
     #[darling(default)]
@@ -26,11 +29,6 @@ struct EnumFieldsInfo {
     #[darling(default)]
     client_msg: String,
 }
-
-// #[derive(Debug, FromField)]
-// struct EnumFields {
-//     // ty: syn::Type,
-// }
 
 pub(crate) fn process_error_info(input: DeriveInput) -> TokenStream {
     let EnumFromDarling {
@@ -49,12 +47,19 @@ pub(crate) fn process_error_info(input: DeriveInput) -> TokenStream {
         let var_code = &variant.code;
         let var_app_code = &variant.app_code;
         let var_client_msg = &variant.client_msg;
+        let fields = &variant.fields;
+
+        let varint_code = match fields.style {
+            darling::ast::Style::Tuple => quote! {#ident::#var_ident(..)},
+            darling::ast::Style::Struct => quote! {#ident::#var_ident{..}},
+            darling::ast::Style::Unit => quote! {#ident::#var_ident},
+        };
 
         let code = format!("{}{}", prefix, var_code);
 
         quote! {
-            #ident::#var_ident(_) => {
-                error_code::ErrorInfo::try_new(
+            #varint_code => {
+                error_code::ErrorInfo::new(
                     #var_app_code,
                     #code,
                     #var_client_msg,
@@ -68,7 +73,7 @@ pub(crate) fn process_error_info(input: DeriveInput) -> TokenStream {
         impl #generics error_code::ToErrorInfo for #ident #generics {
             type T = #app_type;
 
-            fn to_error_info(&self) -> Result<error_code::ErrorInfo<Self::T>,<Self::T as std::str::FromStr>::Err> {
+            fn to_error_info(&self) -> error_code::ErrorInfo<Self::T> {
                 match self {
                     #(#code),*
                 }
@@ -83,7 +88,6 @@ mod tests {
 
     use super::EnumFromDarling;
     use darling::FromDeriveInput;
-
     #[test]
     fn test_darling_data_struct() {
         let input = r#"
@@ -108,10 +112,13 @@ mod tests {
 
         let info = EnumFromDarling::from_derive_input(&input).unwrap();
 
-        println!("{:?}", info);
+        println!("{:#?}", info);
+
+        assert_eq!(info.ident.to_string(), "MyError");
+        assert_eq!(info.prefix, "01");
 
         let code = process_error_info(input);
 
-        println!("{}", code);
+        println!("{:?}", code);
     }
 }

@@ -7,6 +7,15 @@ license = "MIT"
 
 [dev-dependencies]
 thiserror = { workspace = true }
-error-code-derive = { workspace = true }
 http = { workspace = true }
 anyhow = { workspace = true }
+axum = { version = "0.7.9", features = ["http2", "query", "tracing"] }
+tokio = { version = "1.41.1", features = ["rt", "rt-multi-thread", "macros"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+error-code = { workspace = true }
+backtrace = "0.3.74"
+
+[dependencies]
+error-code-derive = { workspace = true }
+base64 = "0.22.1"

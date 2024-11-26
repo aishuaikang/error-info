@@ -20,7 +20,7 @@ pub enum MyError {
 
 fn main() -> anyhow::Result<()> {
     let error = MyError::InvalidCommand("hello".to_string());
-    let info = error.to_error_info()?;
+    let info = error.to_error_info();
 
     println!("{:?}", info);
     Ok(())
